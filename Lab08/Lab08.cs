@@ -3,8 +3,10 @@ using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
-using CPI311.GameEngine;
 using System;
+using CPI311.GameEngine.Manager;
+using CPI311.GameEngine.Physics;
+using CPI311.GameEngine.Components;
 
 namespace Lab08
 {

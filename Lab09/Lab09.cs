@@ -4,6 +4,9 @@ using Microsoft.Xna.Framework.Input;
 using CPI311.GameEngine;
 using System.Collections.Generic;
 using System;
+using CPI311.GameEngine.AI;
+using CPI311.GameEngine.Manager;
+using CPI311.GameEngine.Components;
 
 namespace Lab09
 {

@@ -1,4 +1,4 @@
-﻿using CPI311.GameEngine;
+﻿using CPI311.GameEngine.Manager;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;

@@ -1,12 +1,14 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using CPI311.GameEngine;
 using System.Collections.Generic;
 using System;
 using System.Diagnostics;
 using System.Threading;
-using CPI311.GameEngine;
+using CPI311.GameEngine.Manager;
+using CPI311.GameEngine.Physics;
+using CPI311.GameEngine.Rendering;
+using CPI311.GameEngine.Components;
 
 namespace Assignment03
 {
@@ -72,9 +74,10 @@ namespace Assignment03
 
             // TODO: use this.Content to load your game content here
             model = Content.Load<Model>("Sphere");
+
             camera = new Camera();
             camera.Transform = new Transform();
-            camera.Transform.LocalPosition = Vector3.Backward * 5;
+            camera.Transform.LocalPosition = Vector3.Backward * 20;
             camera.Position = new Vector2(0f, 0f);
             camera.Size = new Vector2(0.5f, 1f);
             camera.AspectRatio = camera.Viewport.AspectRatio;
@@ -154,21 +157,12 @@ namespace Assignment03
             for (int i = 0; i < renderers.Count; i++) renderers[i].Draw();
 
             _spriteBatch.Begin();
-            _spriteBatch.DrawString(font, "RIGHT/LEFT: Speed", new Vector2(), Color.Black);
-            _spriteBatch.DrawString(font, "UP/DOWN: # of Spheres", new Vector2(), Color.Black);
-            _spriteBatch.DrawString(font, "SHIFT: Hide/Show Info", new Vector2(), Color.Black);
-            _spriteBatch.DrawString(font, "SPACE: Speed Colors", new Vector2(), Color.Black);
-            _spriteBatch.DrawString(font, "ALT: Toggle TExtures" + lastSecondCollisions, Vector2.Zero, Color.Black);
-            
-            if (showDiagnostics)
-            {
-
-            }
-            else
-            {
-
-            }
-            
+            _spriteBatch.DrawString(font, "RIGHT/LEFT: Speed", new Vector2(15,15), Color.Black);
+            _spriteBatch.DrawString(font, "UP/DOWN: # of Spheres", new Vector2(15,35), Color.Black);
+            _spriteBatch.DrawString(font, "SHIFT: Hide/Show Info", new Vector2(15,55), Color.Black);
+            _spriteBatch.DrawString(font, "SPACE: Speed Colors", new Vector2(15,75), Color.Black);
+            _spriteBatch.DrawString(font, "ALT: Toggle Textures", new Vector2(15,95), Color.Black);
+            _spriteBatch.DrawString(font, "Collision: " + lastSecondCollisions, new Vector2(650,15), Color.Black);
             _spriteBatch.End();
 
             base.Draw(gameTime);
