@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using CPI311.GameEngine.Physics;
-using Microsoft.Xna.Framework;
+using CPI311.GameEngine.Rendering;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 
 namespace CPI311.GameEngine.Components
 {
@@ -13,6 +12,7 @@ namespace CPI311.GameEngine.Components
         public Camera Camera { get { return Get<Camera>(); } }
         public Rigidbody Rigidbody { get { return Get<Rigidbody>(); } }
         public Collider Collider { get { return Get<Collider>(); } }
+        public Renderer Renderer { get { return Get<Renderer>(); } }
 
         private Dictionary<Type, Component> Components { get; set; }
         private List<IUpdateable> Updateables { get; set; }
@@ -39,6 +39,17 @@ namespace CPI311.GameEngine.Components
             if (component is IRenderable) Renderables.Add(component as IRenderable);
             if (component is IDrawable) Drawables.Add(component as IDrawable);
             return component;
+        }
+
+        public void Add<T> (T component) where T : Component
+        {
+            Remove<T>();
+            component.GameObject = this;
+            component.Transform = Transform;
+            Components.Add(typeof(T), component);
+            if (component is IUpdateable) Updateables.Add(component as IUpdateable);
+            if (component is IRenderable) Renderables.Add(component as IRenderable);
+            if (component is IDrawable) Drawables.Add(component as IDrawable);
         }
 
         public T Get<T>() where T : Component

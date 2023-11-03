@@ -4,11 +4,13 @@ using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using System;
 using System.Diagnostics;
-using System.Threading;
+using System.Threading; // For Multi Threads
 using CPI311.GameEngine.Manager;
 using CPI311.GameEngine.Physics;
 using CPI311.GameEngine.Rendering;
 using CPI311.GameEngine.Components;
+using System.Timers;
+using Timer = System.Timers.Timer;
 
 namespace Assignment03
 {
@@ -17,26 +19,30 @@ namespace Assignment03
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
-        BoxCollider boxCollider;
-
-        List<Transform> transforms;
-        List<Collider> colliders;
-        List<Rigidbody> rigidbodies;
-        List<Renderer> renderers;
-
-        Random random;
-        Model model;
         Camera camera;
+        Light light;
+        Transform lightTransform;
 
+        BoxCollider boxCollider;
+        List<GameObject> gameObjects;
+        Random random;
+
+        Model model;
+        SpriteFont font;
+        Texture2D texture;
+        Effect effect;
+
+        int numberCollisions;
+        float speed;
         bool showDiagnostics = true;
+        bool showSpeed = false;
+        bool textureEnabled = true;
+        Timer timer;
+        static float frames;
+        static float fps;
 
         bool haveThreadRunning = false;
         int lastSecondCollisions = 0;
-        int numberCollisions;
-        SpriteFont font;
-
-        Light light;
-        Transform lightTransform;
 
         public Assignment03()
         {
@@ -53,17 +59,24 @@ namespace Assignment03
             Time.Initialize();
             ScreenManager.Initialize(_graphics);
 
-            haveThreadRunning = true;
-            ThreadPool.QueueUserWorkItem(new WaitCallback(CollisionReset));
-
-            random = new Random();
-            transforms = new List<Transform>();
-            rigidbodies = new List<Rigidbody>();
-            colliders = new List<Collider>();
             boxCollider = new BoxCollider();
             boxCollider.Size = 10;
+            numberCollisions = 0;
 
-            renderers = new List<Renderer>();
+            gameObjects = new List<GameObject>();
+            timer = new Timer(1000);
+            frames = 0;
+            fps = 0;
+            random = new Random();
+            speed = 1f;
+
+            timer.AutoReset = true;
+            timer.Enabled = true;
+            timer.Elapsed += OnTimedEvent;
+
+            haveThreadRunning = true;
+            ThreadPool.QueueUserWorkItem(new WaitCallback(CollisionReset));
+            
 
             base.Initialize();
         }
@@ -74,6 +87,9 @@ namespace Assignment03
 
             // TODO: use this.Content to load your game content here
             model = Content.Load<Model>("Sphere");
+            font = Content.Load<SpriteFont>("Font");
+            texture = Content.Load<Texture2D>("Square");
+            effect = Content.Load<Effect>("SimpleShading");
 
             camera = new Camera();
             camera.Transform = new Transform();
@@ -82,15 +98,15 @@ namespace Assignment03
             camera.Size = new Vector2(0.5f, 1f);
             camera.AspectRatio = camera.Viewport.AspectRatio;
 
-            font = Content.Load<SpriteFont>("Font");
-
-            // *** Lab07 Light *****
+            light = new Light();
             lightTransform = new Transform();
             lightTransform.LocalPosition = Vector3.Backward * 10 + Vector3.Right * 5;
-
-            light = new Light();
             light.Transform = lightTransform;
-            // **********************
+
+            for (int i = 0; i < 5; i++)
+            {
+                AddGameObject();
+            }
         }
 
         protected override void Update(GameTime gameTime)
@@ -102,47 +118,82 @@ namespace Assignment03
             InputManager.Update();
             Time.Update(gameTime);
 
-            if (InputManager.IsKeyPressed(Keys.Right)) ;
-            if (InputManager.IsKeyPressed(Keys.Left)) ;
-
-            if (InputManager.IsKeyPressed(Keys.Up)) AddSphere();
-            if (InputManager.IsKeyPressed(Keys.Left)) RemoveSphere();
-
-            if (InputManager.IsKeyPressed(Keys.LeftShift) || InputManager.IsKeyPressed(Keys.RightShift))
+            foreach (GameObject gameObject in gameObjects)
             {
-                if (showDiagnostics)
-                {
-                    showDiagnostics = false;
-                }
-                else
-                {
-                    showDiagnostics = true;
-                }
+                gameObject.Update();
             }
-            if (InputManager.IsKeyPressed(Keys.Space)) ;
-            if (InputManager.IsKeyPressed(Keys.LeftAlt) || InputManager.IsKeyPressed(Keys.RightAlt)) ;
 
-            foreach (Rigidbody rigidbody in rigidbodies) rigidbody.Update();
+            frames++;
+
+            if (InputManager.IsKeyDown(Keys.Left))
+            {
+                foreach (GameObject gameObject in gameObjects)
+                    gameObject.Get<Rigidbody>().Velocity *= .95f;
+                speed -= .005f;
+            }
+            if (InputManager.IsKeyDown(Keys.Right))
+            {
+                foreach (GameObject gameObject in gameObjects)
+                    gameObject.Get<Rigidbody>().Velocity *= 1.05f;
+                speed += .005f;
+            }
+
+            if (InputManager.IsKeyPressed(Keys.Up))
+            {
+                speed = 1f;
+                AddGameObject();
+            }
+            if (InputManager.IsKeyPressed(Keys.Down))
+            {
+                if (gameObjects.Count > 0) gameObjects.RemoveAt(0);
+            }
+
+            if (InputManager.IsKeyPressed(Keys.LeftShift) || InputManager.IsKeyPressed(Keys.RightShift)) { showDiagnostics = !showDiagnostics; }
+            
+            if (InputManager.IsKeyPressed(Keys.Space)) { showSpeed = !showSpeed; }
+            
+            if (InputManager.IsKeyPressed(Keys.LeftAlt) || InputManager.IsKeyPressed(Keys.RightAlt))
+            {
+                textureEnabled = !textureEnabled;
+                foreach (GameObject gameObject in gameObjects)
+                    if (textureEnabled == true)
+                    {
+                        Renderer renderer = new Renderer(model, gameObject.Transform, camera, Content, GraphicsDevice, light, 2, "SimpleShading", 20f, texture);
+                        gameObject.Add<Renderer>(renderer);
+                    }
+                    else
+                    {
+                        Renderer renderer = new Renderer(model, gameObject.Transform, camera, Content, GraphicsDevice, light, 2, "SimpleShading", 20f, null);
+                        gameObject.Add<Renderer>(renderer);
+                    }
+            }
+
+            if (InputManager.IsKeyPressed(Keys.M))
+            {
+                haveThreadRunning = !haveThreadRunning;
+                ThreadPool.QueueUserWorkItem(new WaitCallback(CollisionReset));
+            }
 
             Vector3 normal;
-            for (int i = 0; i < transforms.Count; i++)
+            for (int i = 0; i < gameObjects.Count; i++)
             {
-                if (boxCollider.Collides(colliders[i], out normal))
+                if (boxCollider.Collides(gameObjects[i].Get<Collider>(), out normal))
                 {
                     numberCollisions++;
-                    if (Vector3.Dot(normal, rigidbodies[i].Velocity) < 0)
-                        rigidbodies[i].Impulse += Vector3.Dot(normal, rigidbodies[i].Velocity) * -2 * normal;
+                    if (Vector3.Dot(normal, gameObjects[i].Get<Rigidbody>().Velocity) < 0)
+                        gameObjects[i].Get<Rigidbody>().Impulse +=
+                            Vector3.Dot(normal, gameObjects[i].Get<Rigidbody>().Velocity) * -2 * normal;
                 }
-                for (int j = i + 1; j < transforms.Count; j++)
+                for (int j = i + 1; j < gameObjects.Count; j++)
                 {
-                    if (colliders[i].Collides(colliders[j], out normal))
-                        numberCollisions++;
+                    if (gameObjects[i].Get<Collider>().Collides(gameObjects[j].Get<Collider>(), out normal))
+                    numberCollisions++;
 
                     Vector3 velocityNormal = Vector3.Dot(normal,
-                        rigidbodies[i].Velocity - rigidbodies[j].Velocity) * -2
-                        * normal * rigidbodies[i].Mass * rigidbodies[j].Mass;
-                    rigidbodies[i].Impulse += velocityNormal / 2;
-                    rigidbodies[j].Impulse += -velocityNormal / 2;
+                        gameObjects[i].Get<Rigidbody>().Velocity - gameObjects[j].Get<Rigidbody>().Velocity) * -2
+                        * normal * gameObjects[i].Get<Rigidbody>().Mass * gameObjects[j].Get<Rigidbody>().Mass;
+                    gameObjects[i].Get<Rigidbody>().Impulse += velocityNormal / 2;
+                    gameObjects[j].Get<Rigidbody>().Impulse += -velocityNormal / 2;
                 }
             }
 
@@ -154,18 +205,55 @@ namespace Assignment03
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             // TODO: Add your drawing code here
-            for (int i = 0; i < renderers.Count; i++) renderers[i].Draw();
-
             _spriteBatch.Begin();
-            _spriteBatch.DrawString(font, "RIGHT/LEFT: Speed", new Vector2(15,15), Color.Black);
-            _spriteBatch.DrawString(font, "UP/DOWN: # of Spheres", new Vector2(15,35), Color.Black);
-            _spriteBatch.DrawString(font, "SHIFT: Hide/Show Info", new Vector2(15,55), Color.Black);
-            _spriteBatch.DrawString(font, "SPACE: Speed Colors", new Vector2(15,75), Color.Black);
-            _spriteBatch.DrawString(font, "ALT: Toggle Textures", new Vector2(15,95), Color.Black);
-            _spriteBatch.DrawString(font, "Collision: " + lastSecondCollisions, new Vector2(650,15), Color.Black);
+
+            foreach (GameObject gameObject in gameObjects)
+            {
+                gameObject.Draw();
+            }
+
+            if (showSpeed == true)
+            {
+                for (int i = 0; i < gameObjects.Count; i++)
+                {
+                    Transform transform = gameObjects[i].Get<Rigidbody>().Transform;
+                    float speed = gameObjects[i].Get<Rigidbody>().Velocity.Length();
+                    float speedValue = MathHelper.Clamp(speed / 50f, 0, 1);
+                    (model.Meshes[0].Effects[0] as BasicEffect).DiffuseColor =
+                                               new Vector3(speedValue, speedValue, 1);
+
+                    model.Draw(transform.World, camera.View, camera.Projection);
+                }
+            }
+
+            _spriteBatch.DrawString(font, "Controls", new Vector2(10, 10), Color.Black);
+            _spriteBatch.DrawString(font, "RIGHT/LEFT: Speed", new Vector2(10, 30), Color.Black);
+            _spriteBatch.DrawString(font, "UP/DOWN: Number of Spheres", new Vector2(10, 50), Color.Black);
+            _spriteBatch.DrawString(font, "SHIFT: Hide/Show Info", new Vector2(10, 70), Color.Black);
+            _spriteBatch.DrawString(font, "SPACE: Speed Colors", new Vector2(10, 90), Color.Black);
+            _spriteBatch.DrawString(font, "ALT: Toggle Textures", new Vector2(10, 110), Color.Black);
+            _spriteBatch.DrawString(font, "M: Toggle MultiThreading", new Vector2(10, 130), Color.Black);
+            _spriteBatch.DrawString(font, "Average Collisions: " + lastSecondCollisions, new Vector2(10, 150), Color.Black);
+
+            if (showDiagnostics == true)
+            {
+                _spriteBatch.DrawString(font, "Animation Speed: " + speed, new Vector2(10, 200), Color.Black);
+                _spriteBatch.DrawString(font, "Show Speed Color: " + showSpeed, new Vector2(10, 220), Color.Black);
+                _spriteBatch.DrawString(font, "Show Textures: " + textureEnabled, new Vector2(10, 240), Color.Black);
+                _spriteBatch.DrawString(font, "MultiThreading: " + haveThreadRunning, new Vector2(10, 260), Color.Black);
+                _spriteBatch.DrawString(font, "FPS: " + fps, new Vector2(10, 280), Color.White);
+            }
+
             _spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        private static void OnTimedEvent(Object source, ElapsedEventArgs e)
+        {
+            fps = frames;
+            Debug.Print(fps.ToString());
+            frames = 0;
         }
 
         private void CollisionReset(Object obj)
@@ -178,42 +266,39 @@ namespace Assignment03
             }
         }
 
-        private void AddSphere()
+        private void AddGameObject()
         {
-            // Step 1: Create Transform
-            Transform transform = new Transform();
-            transform.LocalPosition += Vector3.Right * 3;
-            // Adding Render
-            Texture2D texture = Content.Load<Texture2D>("Square");
-            Renderer renderer = new Renderer(model, transform, camera, Content, GraphicsDevice, light, 2, "SimpleShading", 20f, texture);
-            renderers.Add(renderer);
-
-            // Step 2: Rigidbody
+            GameObject gameObject = new GameObject();
+            gameObject.Transform.LocalPosition += Vector3.Right * 10 * (float)random.NextDouble();
+            
             Rigidbody rigidbody = new Rigidbody();
-            rigidbody.Transform = transform;
-            rigidbody.Mass = random.Next();
-
+            rigidbody.Transform = gameObject.Transform;
+            rigidbody.Mass = 1;
+            gameObject.Add<Rigidbody>(rigidbody);
             Vector3 direction = new Vector3(
-                (float)random.NextDouble(),
-                (float)random.NextDouble(),
-                (float)random.NextDouble());
+              (float)random.NextDouble(), (float)random.NextDouble(),
+              (float)random.NextDouble());
             direction.Normalize();
-            rigidbody.Velocity =
-                direction * ((float)random.NextDouble() * 5 + 5);
-            // Step 3: Collider
+            rigidbody.Velocity = direction * ((float)random.NextDouble() * 5 + 5);
+            gameObject.Add<Rigidbody>(rigidbody);
+
             SphereCollider sphereCollider = new SphereCollider();
-            sphereCollider.Radius = 1.0f * transform.LocalScale.Y;
-            sphereCollider.Transform = transform;
-            Debug.WriteLine(sphereCollider.Transform.World);
-            // Step 4: Add to List
-            transforms.Add(transform);
-            colliders.Add(sphereCollider);
-            rigidbodies.Add(rigidbody);
-        }
+            sphereCollider.Radius = 1.0f * gameObject.Transform.LocalScale.Y;
+            sphereCollider.Transform = gameObject.Transform;
+            gameObject.Add<Collider>(sphereCollider);
 
-        private void RemoveSphere()
-        {
+            if (textureEnabled == true)
+            {
+                Renderer renderer = new Renderer(model, gameObject.Transform, camera, Content, GraphicsDevice, light, 2, "SimpleShading", 20f, texture);
+                gameObject.Add<Renderer>(renderer);
+            }
+            else
+            {
+                Renderer renderer = new Renderer(model, gameObject.Transform, camera, Content, GraphicsDevice, light, 2, "SimpleShading", 20f, null);
+                gameObject.Add<Renderer>(renderer);
+            }
 
+            gameObjects.Add(gameObject);
         }
     }
 }

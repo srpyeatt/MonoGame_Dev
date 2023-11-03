@@ -111,7 +111,8 @@ namespace Lab07
                 {
                     numberCollisions++;
                     if (Vector3.Dot(normal, rigidbodies[i].Velocity) < 0)
-                        rigidbodies[i].Impulse += Vector3.Dot(normal, rigidbodies[i].Velocity) * -2 * normal;
+                        rigidbodies[i].Impulse += 
+                        Vector3.Dot(normal, rigidbodies[i].Velocity) * -2 * normal;
                 }
                 for (int j = i + 1; j < transforms.Count; j++)
                 {
