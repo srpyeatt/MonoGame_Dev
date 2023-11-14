@@ -33,6 +33,11 @@ namespace CPI311.GameEngine.Manager
         {
             return CurrentKeyboardState.IsKeyDown(key) && PreviousKeyboardState.IsKeyUp(key);
         }
+        public static bool IsKeyReleased(Keys key)
+        {
+            return CurrentKeyboardState.IsKeyUp(key) &&
+                    PreviousKeyboardState.IsKeyDown(key);
+        }
 
         // *** Lab08 ***
         public static Vector2 GetMousePosition()
