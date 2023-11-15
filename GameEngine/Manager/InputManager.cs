@@ -45,33 +45,42 @@ namespace CPI311.GameEngine.Manager
             return new Vector2(CurrentMouseState.X, CurrentMouseState.Y);
         }
         // *************
-        public static bool LeftButtonPressed()
+
+        // *** Lab11 ***
+        public static bool IsMouseReleased(int mouseButton)
         {
-            if (CurrentMouseState.LeftButton == ButtonState.Pressed
-                && PreviousMouseState.LeftButton == ButtonState.Released)
-                return true;
-            else return false;
+            switch (mouseButton)
+            {
+                case 0:
+                    return PreviousMouseState.LeftButton == ButtonState.Pressed
+                            && CurrentMouseState.LeftButton == ButtonState.Released;
+                case 1:
+                    return PreviousMouseState.RightButton == ButtonState.Pressed
+                            && CurrentMouseState.RightButton == ButtonState.Released;
+                case 2:
+                    return PreviousMouseState.MiddleButton == ButtonState.Pressed
+                            && CurrentMouseState.MiddleButton == ButtonState.Released;
+                default: 
+                    return false;
+            }
         }
-        public static bool LeftButtonDown()
+        // *************
+        public static bool IsMousePressed(int mouseButton)
         {
-            if (CurrentMouseState.LeftButton == ButtonState.Pressed
-                && PreviousMouseState.LeftButton == ButtonState.Pressed)
-                return true;
-            else return false;
-        }
-        public static bool RightButtonPressed()
-        {
-            if (CurrentMouseState.RightButton == ButtonState.Pressed
-                && PreviousMouseState.RightButton == ButtonState.Released)
-                return true;
-            else return false;
-        }
-        public static bool RightButtonDown()
-        {
-            if (CurrentMouseState.RightButton == ButtonState.Pressed
-                && PreviousMouseState.RightButton == ButtonState.Pressed)
-                return true;
-            else return false;
+            switch (mouseButton)
+            {
+                case 0:
+                    return CurrentMouseState.LeftButton == ButtonState.Pressed
+                            && PreviousMouseState.LeftButton == ButtonState.Released;
+                case 1:
+                    return CurrentMouseState.RightButton == ButtonState.Pressed
+                            && PreviousMouseState.RightButton == ButtonState.Released;
+                case 2:
+                    return CurrentMouseState.MiddleButton == ButtonState.Pressed
+                            && PreviousMouseState.MiddleButton == ButtonState.Released;
+                default:
+                    return false;
+            }
         }
     }
 }
