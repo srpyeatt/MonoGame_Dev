@@ -12,7 +12,7 @@ namespace CPI311.GameEngine.Components
         public Camera Camera { get { return Get<Camera>(); } }
         public Rigidbody Rigidbody { get { return Get<Rigidbody>(); } }
         public Collider Collider { get { return Get<Collider>(); } }
-        public Renderer Renderer { get { return Get<Renderer>(); } }
+        //public Renderer Renderer { get { return Get<Renderer>(); } }
 
         private Dictionary<Type, Component> Components { get; set; }
         private List<IUpdateable> Updateables { get; set; }

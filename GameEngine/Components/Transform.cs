@@ -155,5 +155,10 @@ namespace CPI311.GameEngine.Components
         {
             LocalRotation *= Quaternion.CreateFromAxisAngle(axis, angle);
         }
+
+        public void Update()
+        {
+            UpdateWorld();
+        }
     }
 }

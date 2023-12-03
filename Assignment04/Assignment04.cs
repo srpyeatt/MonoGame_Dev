@@ -230,7 +230,7 @@ namespace Assignment04
                 soundHyperspaceActivation.Play();
             }
 
-            if (ship.isActive && InputManager.LeftButtonPressed())
+            if (ship.isActive && InputManager.IsMousePressed(0))
             {
                 for (int i = 0; i < GameConstants.NumBullets; i++)
                 {
